@@ -50,7 +50,13 @@ pub trait PeekSeek: Sized {
 
     /// Skip until `f` is satisfied, but don't consume the byte at `f`.
     #[inline]
-    fn skip_until<F: Fn(Self::Item) -> bool>(&mut self, f: F) -> usize {
+    fn skip_until(&mut self, target: Self::Item) -> usize {
+        self.skip_until_pattern(|c| c == target)
+    }
+
+    /// Skip until `f` is satisfied, but don't consume the byte at `f`.
+    #[inline]
+    fn skip_until_pattern<F: Fn(Self::Item) -> bool>(&mut self, f: F) -> usize {
         let mut n = 0;
         while let Some(c) = self.peek() {
             if f(c) {

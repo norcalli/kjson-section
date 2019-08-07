@@ -4,6 +4,16 @@ version = "0.1.0"
 authors = ["Ashkan Kiani <ashkan.k.kiani@gmail.com>"]
 edition = "2018"
 
+authors = ["Ashkan Kiani <dev.section@kiani.io>"]
+readme = "README.md"
+homepage = "https://github.com/norcalli/section"
+repository = "https://github.com/norcalli/section"
+documentation = "https://docs.rs/section"
+license = "MIT/Apache-2.0"
+keywords = []
+description = "A small utility for writing parsers."
+include = ["src/*", "Cargo.toml", "README.md"]
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
