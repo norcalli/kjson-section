@@ -58,31 +58,6 @@ impl<'a> ByteSection<'a> {
     pub fn slice_from_start(&self) -> &'a [u8] {
         &self.src[..self.n]
     }
-
-    /// Skip until `f` is satisfied, but don't consume the byte at `f`.
-    #[inline]
-    fn skip_until_fallback(&mut self, target: u8) -> usize {
-        let n = self.n;
-        let maxn = self.src.len();
-        let src = self.src;
-        while self.n < maxn {
-            if src[self.n] == target {
-                return self.n;
-            }
-            self.n += 1;
-        }
-        self.n - n
-    }
-
-    /// Skip until `f` is satisfied, but don't consume the byte at `f`.
-    #[inline]
-    #[cfg(all(
-        target_feature = "avx2",
-        any(target_arch = "x86", target_arch = "x86_64")
-    ))]
-    unsafe fn skip_until_avx2(&mut self, target: u8) -> usize {
-        self.skip_until_fallback(target)
-    }
 }
 
 impl<'a, __IdxT> ::std::ops::Index<__IdxT> for ByteSection<'a>
@@ -133,61 +108,17 @@ impl crate::PeekSeek for ByteSection<'_> {
         self.n - n
     }
 
-    // /// Skip until `f` is satisfied, but don't consume the byte at `f`.
-    // #[inline]
-    // #[cfg(all(
-    //     target_feature = "avx2",
-    //     any(target_arch = "x86", target_arch = "x86_64")
-    // ))]
-    // fn skip_until(&mut self, target: Self::Item) -> usize {
-    //     // _mm_cmpeq_epi8_mask
-    //     // if is_x86_feature_detected!("avx2") {
-    //     use std::arch::x86_64::{
-    //         __mm256i, _blsmsk_u64, _mm256_cmpeq_epi8, _mm256_movemask_epi8, _mm256_set1_epi8,
-    //     };
-    //     unsafe {
-    //         let mm_target: __mm256i = _mm256_set1_epi8(target);
-    //         let mut n = self.n;
-    //         let maxn = self.src.len() - (self.src.len() - n) % 32;
-    //         let src = self.src.as_ptr();
-    //         while n < maxn {
-    //             let input = _mm256_loadu_si256(src + n);
-    //             let mask = _mm256_movemask_epi8(_mm256_cmpeq_epi8(mm_target, data));
-    //             let parts: [u64; 4] = std::mem::transmute(mask);
-    //             let mut x = 0;
-    //             for i in 0..4 {
-    //                 x += _popcnt64(_blsmsk_u64(parts[i]));
-    //             }
-    //             n += x;
-    //             if x < 32 {
-    //                 break;
-    //             }
-    //         }
-    //     }
-    //     self.skip_until_pattern(|c| c == target)
-    // }
-
-    /// Skip until `f` is satisfied, but don't consume the byte at `f`.
     #[inline]
-    #[cfg(all(
-        target_feature = "avx2",
-        any(target_arch = "x86", target_arch = "x86_64")
-    ))]
     fn skip_until(&mut self, target: Self::Item) -> usize {
-        #[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
-        {
-            if is_x86_feature_detected!("avx2") {
-                return unsafe { self.skip_until_avx2(target) };
-            }
+        if let Some(n) = memchr::memchr(target, &self.src[self.n..]) {
+            self.n += n;
+            n
+        } else {
+            let n = self.n;
+            self.n = self.src.len();
+            self.n - n
         }
-        self.skip_until_fallback(target)
     }
-
-    // /// Skip until `f` is satisfied, but don't consume the byte at `f`.
-    // #[inline]
-    // fn skip_until(&mut self, target: Self::Item) -> usize {
-    //     self.skip_until_pattern(|c| c == target)
-    // }
 
     #[inline]
     fn is_empty(&self) -> bool {
