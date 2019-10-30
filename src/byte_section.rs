@@ -20,7 +20,11 @@ impl<'a> fmt::Display for ByteSection<'a> {
         } else {
             write!(f, "head=None, ")?;
         }
-        write!(f, "s={:?})", self.src)?;
+        write!(
+            f,
+            "s={:?})",
+            &self.src[self.n..self.src.len().min(self.n + 20)]
+        )?;
         Ok(())
     }
 }
